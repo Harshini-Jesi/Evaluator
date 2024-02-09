@@ -25,6 +25,8 @@ class TVariable : TNumber {
 abstract class TOperator : Token {
    protected TOperator (Evaluator eval) => mEval = eval;
    public abstract int Priority { get; }
+   public virtual int FinalPriority { get; set; }
+
    readonly protected Evaluator mEval;
 }
 
@@ -32,15 +34,18 @@ class TOpArithmetic : TOperator {
    public TOpArithmetic (Evaluator eval, char ch) : base (eval) => Op = ch;
    public char Op { get; private set; }
    public override string ToString () => $"op:{Op}:{Priority}";
-   public override int Priority => sPriority[Op] + mEval.BasePriority;
-   static Dictionary<char, int> sPriority = new () {
+   public override int Priority => sPriority[Op];
+
+   static readonly Dictionary<char, int> sPriority = new () {
       ['+'] = 1, ['-'] = 1, ['*'] = 2, ['/'] = 2, ['^'] = 3, ['='] = 4,
    };
 
    public double Evaluate (double a, double b) {
       return Op switch {
-         '+' => a + b, '-' => a - b, 
-         '*' => a * b, '/' => a / b,
+         '+' => a + b,
+         '-' => a - b,
+         '*' => a * b,
+         '/' => a / b,
          '^' => Math.Pow (a, b),
          _ => throw new EvalException ($"Unknown operator: {Op}"),
       };
@@ -55,7 +60,7 @@ class TOpFunction : TOperator {
 
    public double Evaluate (double f) {
       return Func switch {
-         "sin" => Math.Sin (D2R (f)), 
+         "sin" => Math.Sin (D2R (f)),
          "cos" => Math.Cos (D2R (f)),
          "tan" => Math.Tan (D2R (f)),
          "sqrt" => Math.Sqrt (f),
@@ -69,6 +74,21 @@ class TOpFunction : TOperator {
 
       double D2R (double f) => f * Math.PI / 180;
       double R2D (double f) => f * 180 / Math.PI;
+   }
+}
+
+class TOpUnary : TOperator {
+   public TOpUnary (Evaluator eval, char ch) : base (eval) => UOp = ch;
+   public char UOp { get; private set; }
+   public override string ToString () => $"op:{UOp}:{Priority}";
+   public override int Priority => 1;
+
+   public double Evaluate (double f) {
+      return UOp switch {
+         '+' => f,
+         '-' => -f,
+         _ => throw new EvalException ($"Unknown operator: {UOp}"),
+      };
    }
 }
 

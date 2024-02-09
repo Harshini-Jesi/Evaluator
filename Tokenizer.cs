@@ -15,7 +15,11 @@ class Tokenizer {
             case ' ' or '\t': continue;
             case (>= '0' and <= '9') or '.': return GetNumber ();
             case '(' or ')': return new TPunctuation (ch);
-            case '+' or '-' or '*' or '/' or '^' or '=': return new TOpArithmetic (mEval, ch);
+            case '+' or '-':
+               if (mN - 1 == 0) return new TOpUnary (mEval, ch);
+               var prev = mEval.GetPrevToken ();
+               return (prev is TPunctuation p && p.Punct == '(' || prev is TOperator) ? new TOpUnary (mEval, ch) : new TOpArithmetic (mEval, ch);
+            case '*' or '/' or '^' or '=': return new TOpArithmetic (mEval, ch);
             case >= 'a' and <= 'z': return GetIdentifier ();
             default: return new TError ($"Unknown symbol: {ch}");
          }
